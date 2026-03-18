@@ -429,9 +429,9 @@
   <div id="pane-setup" class="pane">
 
     <div class="card">
-      <h2>🔑 Claude API キー</h2>
+      <h2>🔑 Gemini API キー</h2>
       <div class="api-row">
-        <input type="password" id="api-key" placeholder="sk-ant-..." />
+        <input type="password" id="api-key" placeholder="AIza..." />
         <button class="btn-primary btn-sm" onclick="saveApiKey()">保存</button>
       </div>
       <p style="font-size:.72rem;color:var(--text2);margin-top:6px;">
@@ -697,7 +697,7 @@ function sendManual() {
 }
 
 // ============================================================
-//  CLAUDE API
+//  GEMINI API
 // ============================================================
 async function sendToAI(text) {
   if (!apiKey) {
@@ -712,22 +712,17 @@ async function sendToAI(text) {
   addLoadingBlock(loadingId, text);
 
   const systemPrompt = buildSystemPrompt();
-  const messages = buildMessages(text);
+  const contents = buildMessages(text);
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
-        system: systemPrompt,
-        messages: messages,
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: contents,
+        generationConfig: { maxOutputTokens: 1500, temperature: 0.7 },
       }),
     });
 
@@ -737,7 +732,7 @@ async function sendToAI(text) {
     }
 
     const data = await res.json();
-    const rawAnswer = data.content[0].text;
+    const rawAnswer = data.candidates[0].content.parts[0].text;
     const parsed = parseAnswer(rawAnswer);
 
     // Replace loading block with real answer
@@ -800,10 +795,10 @@ function buildMessages(text) {
   // Include last 4 exchanges as context
   const recent = history.slice(-4);
   for (const h of recent) {
-    msgs.push({ role: 'user', content: h.text });
-    msgs.push({ role: 'assistant', content: JSON.stringify(h.answer) });
+    msgs.push({ role: 'user',  parts: [{ text: h.text }] });
+    msgs.push({ role: 'model', parts: [{ text: JSON.stringify(h.answer) }] });
   }
-  msgs.push({ role: 'user', content: text });
+  msgs.push({ role: 'user', parts: [{ text: text }] });
   return msgs;
 }
 
