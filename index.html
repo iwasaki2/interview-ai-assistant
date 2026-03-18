@@ -1120,17 +1120,28 @@ async function sendToAI(text) {
   const systemPrompt = buildSystemPrompt();
   const contents = buildMessages(text);
 
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const body = JSON.stringify({
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: contents,
+    generationConfig: { maxOutputTokens: 1500, temperature: 0.7 },
+  });
+
+  const callApi = () => fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  });
+
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: contents,
-        generationConfig: { maxOutputTokens: 1500, temperature: 0.7 },
-      }),
-    });
+    let res = await callApi();
+
+    // 429: wait 3s and retry once
+    if (res.status === 429) {
+      toast('レート制限中... 3秒後にリトライします');
+      await new Promise(r => setTimeout(r, 3000));
+      res = await callApi();
+    }
 
     if (!res.ok) {
       const errBody = await res.text();
