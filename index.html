@@ -4,449 +4,854 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>面接AI アシスタント</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* ============================================================
+       DESIGN TOKENS
+    ============================================================ */
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d2e;
-      --surface2: #242740;
-      --border: #2e3250;
-      --accent: #6c63ff;
-      --accent2: #48cfad;
-      --text: #e8eaf6;
-      --text2: #9fa8c7;
-      --danger: #ff5370;
-      --warn: #ffcb6b;
-      --radius: 12px;
-      --radius-sm: 8px;
+      --bg: #080c14;
+      --surface: rgba(15, 23, 48, 0.65);
+      --surface2: rgba(30, 41, 80, 0.55);
+      --surface-solid: #0d1628;
+      --border: rgba(148, 163, 220, 0.10);
+      --border-bright: rgba(148, 163, 220, 0.22);
+      --g1: #7c3aed;
+      --g2: #2563eb;
+      --g3: #06b6d4;
+      --grad: linear-gradient(135deg, #7c3aed, #2563eb);
+      --grad-3: linear-gradient(135deg, #7c3aed, #2563eb, #06b6d4);
+      --text: #f1f5f9;
+      --text2: #94a3b8;
+      --text3: #64748b;
+      --danger: #f43f5e;
+      --warn: #f59e0b;
+      --success: #10b981;
+      --radius: 20px;
+      --radius-sm: 14px;
+      --radius-xs: 9px;
+      --blur: blur(20px) saturate(160%);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ============================================================
+       RESET & BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { -webkit-text-size-adjust: 100%; }
 
     body {
-      font-family: 'Segoe UI', 'Noto Sans JP', sans-serif;
+      font-family: 'Noto Sans JP', 'Segoe UI', sans-serif;
       background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 90% 60% at 10% -5%,  rgba(124, 58, 237, 0.22) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 90% 110%, rgba(37,  99, 235, 0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 55%  55%, rgba(6,  182, 212, 0.07) 0%, transparent 60%);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
-    /* ========== HEADER ========== */
+    /* ============================================================
+       HEADER
+    ============================================================ */
     header {
-      background: var(--surface);
+      background: rgba(8, 12, 20, 0.80);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
       border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
+      padding: 0 20px;
+      height: 60px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 200;
     }
-    header h1 {
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--grad);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 1.1rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.45);
+    }
+    .logo-texts { display: flex; flex-direction: column; line-height: 1.1; }
+    .logo-main {
+      font-size: 1.05rem;
       font-weight: 700;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      background: var(--grad-3);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .header-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+    .logo-sub { font-size: 0.62rem; color: var(--text3); letter-spacing: .08em; }
 
-    /* ========== BUTTON ========== */
-    button {
-      cursor: pointer;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 8px 14px;
-      transition: all .2s;
-    }
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-    .btn-primary:hover { filter: brightness(1.15); }
-    .btn-ghost {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text2);
-    }
-    .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
-    .btn-danger {
-      background: transparent;
-      border: 1px solid var(--danger);
-      color: var(--danger);
-    }
-    .btn-danger:hover { background: var(--danger); color: #fff; }
-    .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
-
-    /* ========== BADGE ========== */
+    /* ============================================================
+       BADGE
+    ============================================================ */
     .badge {
-      display: inline-block;
-      padding: 2px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 11px;
       border-radius: 20px;
       font-size: 0.72rem;
       font-weight: 600;
+      letter-spacing: .02em;
+      border: 1px solid transparent;
+      transition: all .3s;
     }
-    .badge-interviewer { background: #3f2d6e; color: #b39ddb; }
-    .badge-applicant  { background: #1b3a2f; color: #80cbc4; }
+    .badge-applicant {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+    .badge-interviewer {
+      background: rgba(124, 58, 237, 0.15);
+      border-color: rgba(124, 58, 237, 0.35);
+      color: #a78bfa;
+    }
 
-    /* ========== TABS ========== */
+    /* ============================================================
+       TAB BAR
+    ============================================================ */
     .tab-bar {
       display: flex;
-      background: var(--surface);
+      background: rgba(8, 12, 20, 0.75);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
       border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 60px;
+      z-index: 190;
     }
     .tab-btn {
       flex: 1;
-      padding: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 13px 0;
       background: transparent;
-      border-radius: 0;
-      border-bottom: 3px solid transparent;
-      color: var(--text2);
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text3);
+      font-family: inherit;
       font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 0;
+      transition: color .25s, border-color .25s;
+      letter-spacing: .02em;
     }
+    .tab-btn .tab-emoji { font-size: 1rem; }
     .tab-btn.active {
-      border-bottom-color: var(--accent);
       color: var(--text);
+      border-bottom-color: var(--g1);
+      background: linear-gradient(180deg, transparent, rgba(124,58,237,0.06));
     }
 
-    /* ========== MAIN LAYOUT ========== */
+    /* ============================================================
+       MAIN LAYOUT
+    ============================================================ */
     main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .pane { display: none; flex: 1; overflow-y: auto; padding: 16px; }
-    .pane.active { display: flex; flex-direction: column; gap: 14px; }
+    .pane { display: none; flex: 1; overflow-y: auto; padding: 18px 16px 32px; }
+    .pane.active { display: flex; flex-direction: column; gap: 16px; }
 
-    /* ========== FORM ========== */
+    /* ============================================================
+       GLASS CARD
+    ============================================================ */
     .card {
       background: var(--surface);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 20px;
+      transition: border-color .3s;
     }
-    .card h2 {
-      font-size: 0.9rem;
-      color: var(--text2);
-      margin-bottom: 12px;
+    .card:hover { border-color: var(--border-bright); }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text3);
       text-transform: uppercase;
-      letter-spacing: .05em;
+      letter-spacing: .1em;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
     }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ============================================================
+       FORM ELEMENTS
+    ============================================================ */
     label {
       display: block;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
+      font-weight: 600;
       color: var(--text2);
-      margin-bottom: 4px;
-      margin-top: 10px;
+      margin-bottom: 5px;
+      margin-top: 14px;
     }
     label:first-of-type { margin-top: 0; }
-    input[type=text], input[type=password], textarea, select {
+
+    input[type=text],
+    input[type=password],
+    textarea {
       width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+      background: rgba(8, 12, 20, 0.7);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-xs);
       color: var(--text);
-      font-size: 0.88rem;
-      padding: 9px 12px;
-      outline: none;
-      transition: border-color .2s;
       font-family: inherit;
+      font-size: 0.88rem;
+      padding: 10px 14px;
+      outline: none;
       resize: vertical;
+      transition: border-color .2s, box-shadow .2s;
+      -webkit-appearance: none;
     }
-    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
-    select option { background: var(--surface2); }
-    .api-row {
-      display: flex;
-      gap: 8px;
-      align-items: flex-end;
+    input:focus, textarea:focus {
+      border-color: var(--g1);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
     }
+    input::placeholder, textarea::placeholder { color: var(--text3); }
+
+    .api-row { display: flex; gap: 8px; align-items: flex-end; }
     .api-row input { flex: 1; }
 
-    /* ========== MODE TOGGLE ========== */
+    /* ============================================================
+       BUTTONS
+    ============================================================ */
+    button { cursor: pointer; border: none; font-family: inherit; transition: all .2s; }
+
+    .btn-primary {
+      background: var(--grad);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: var(--radius-xs);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);
+    }
+    .btn-primary:hover {
+      filter: brightness(1.12);
+      box-shadow: 0 6px 24px rgba(124, 58, 237, 0.5);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-ghost {
+      background: rgba(148, 163, 220, 0.08);
+      border: 1px solid var(--border-bright);
+      color: var(--text2);
+      padding: 10px 16px;
+      border-radius: var(--radius-xs);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .btn-ghost:hover {
+      border-color: var(--g1);
+      color: var(--text);
+      background: rgba(124, 58, 237, 0.1);
+    }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      color: var(--danger);
+      padding: 7px 14px;
+      border-radius: var(--radius-xs);
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.12);
+      border-color: var(--danger);
+    }
+
+    .btn-sm { padding: 7px 14px !important; font-size: 0.78rem !important; }
+
+    /* ============================================================
+       MODE TOGGLE
+    ============================================================ */
     .mode-toggle {
       display: flex;
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: rgba(8, 12, 20, 0.5);
+      border: 1px solid var(--border-bright);
       border-radius: var(--radius-sm);
-      overflow: hidden;
+      padding: 4px;
+      gap: 4px;
     }
     .mode-toggle button {
       flex: 1;
-      border-radius: 0;
+      padding: 10px 8px;
+      border-radius: 10px;
       background: transparent;
       color: var(--text2);
-      border-bottom: none;
-      padding: 9px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: .01em;
     }
     .mode-toggle button.active {
-      background: var(--accent);
+      background: var(--grad);
       color: #fff;
+      box-shadow: 0 3px 14px rgba(124, 58, 237, 0.4);
+    }
+    .mode-toggle button:not(.active):hover {
+      background: rgba(148, 163, 220, 0.08);
+      color: var(--text);
     }
 
-    /* ========== MIC PANEL ========== */
-    .mic-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
+    #mode-desc {
+      font-size: 0.74rem;
+      color: var(--text3);
+      text-align: center;
+      margin-top: 10px;
+      line-height: 1.5;
     }
-    .mic-header {
+
+    /* ============================================================
+       MIC PANEL
+    ============================================================ */
+    .mic-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      padding: 28px 20px 22px;
+    }
+
+    /* Circular mic button + ripple rings */
+    .mic-center {
+      position: relative;
+      width: 120px;
+      height: 120px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
+      justify-content: center;
     }
-    .mic-status {
+
+    .mic-rings {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .ring {
+      position: absolute;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 2px solid rgba(124, 58, 237, 0.0);
+    }
+
+    /* Activate rings via :has() when mic-dot gets .listening */
+    .mic-panel:has(#mic-dot.listening) .ring1 {
+      animation: ring-pulse 2s ease-out infinite;
+    }
+    .mic-panel:has(#mic-dot.listening) .ring2 {
+      animation: ring-pulse 2s ease-out infinite 0.75s;
+    }
+    .mic-panel:has(#mic-dot.listening) #btn-mic {
+      box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.5), 0 8px 40px rgba(124, 58, 237, 0.55);
+      animation: mic-glow 2s ease-in-out infinite;
+    }
+    .mic-panel:has(#mic-dot.processing) #btn-mic {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      box-shadow: 0 6px 30px rgba(217, 119, 6, 0.5);
+    }
+
+    @keyframes ring-pulse {
+      0%   { width: 96px;  height: 96px;  border-color: rgba(124,58,237,0.7); opacity: 1; }
+      100% { width: 170px; height: 170px; border-color: rgba(124,58,237,0);   opacity: 0; }
+    }
+    @keyframes mic-glow {
+      0%, 100% { box-shadow: 0 0 24px rgba(124,58,237,0.4), 0 8px 40px rgba(124,58,237,0.35); }
+      50%       { box-shadow: 0 0 48px rgba(124,58,237,0.8), 0 8px 40px rgba(124,58,237,0.6);  }
+    }
+
+    #btn-mic {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      background: var(--grad);
+      color: #fff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      line-height: 1.3;
+      box-shadow: 0 6px 30px rgba(124, 58, 237, 0.45);
+      transition: transform .2s, box-shadow .3s, background .3s;
+      position: relative;
+      z-index: 1;
+    }
+    #btn-mic:hover { transform: scale(1.07); }
+    #btn-mic:active { transform: scale(0.96); }
+
+    /* Status row (dot + text + send button) */
+    .mic-status-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.85rem;
+      width: 100%;
+      justify-content: center;
     }
     .mic-dot {
-      width: 10px; height: 10px;
+      width: 9px; height: 9px;
       border-radius: 50%;
-      background: var(--text2);
-      transition: background .3s;
+      background: var(--text3);
+      flex-shrink: 0;
+      transition: background .3s, box-shadow .3s;
     }
-    .mic-dot.listening { background: var(--danger); animation: pulse 1s infinite; }
-    .mic-dot.processing { background: var(--warn); }
-    .mic-dot.ready { background: var(--accent2); }
-    @keyframes pulse {
+    .mic-dot.listening {
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+      animation: dot-pulse 1s infinite;
+    }
+    .mic-dot.processing {
+      background: var(--warn);
+      box-shadow: 0 0 8px var(--warn);
+    }
+    .mic-dot.ready {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+    @keyframes dot-pulse {
       0%,100% { opacity: 1; }
-      50% { opacity: .4; }
+      50%      { opacity: .35; }
     }
+
+    #mic-status-text {
+      font-size: 0.82rem;
+      color: var(--text2);
+      font-weight: 500;
+      flex: 1;
+    }
+    .btn-send {
+      background: rgba(148, 163, 220, 0.1);
+      border: 1px solid var(--border-bright);
+      color: var(--text2);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .btn-send:hover {
+      border-color: var(--g3);
+      color: var(--g3);
+      background: rgba(6,182,212,0.08);
+    }
+
+    /* Transcript box */
     #transcript-box {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      min-height: 60px;
-      padding: 10px 12px;
+      width: 100%;
+      background: rgba(8, 12, 20, 0.6);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-xs);
+      min-height: 64px;
+      padding: 12px 14px;
       font-size: 0.9rem;
-      line-height: 1.6;
+      line-height: 1.65;
       color: var(--text);
       white-space: pre-wrap;
+      word-break: break-word;
     }
-    .transcript-interim { color: var(--text2); font-style: italic; }
+    .transcript-interim { color: var(--text3); font-style: italic; }
+
+    /* Silence progress bar */
     .silence-bar {
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      margin-top: 8px;
+      width: 100%;
+      height: 4px;
+      background: rgba(148, 163, 220, 0.12);
+      border-radius: 4px;
       overflow: hidden;
     }
     .silence-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      background: var(--grad-3);
       width: 0%;
       transition: width .1s linear;
+      border-radius: 4px;
+    }
+    .silence-label {
+      font-size: 0.7rem;
+      color: var(--text3);
+      text-align: right;
+      width: 100%;
+      letter-spacing: .02em;
     }
 
-    /* ========== HISTORY ========== */
+    /* ============================================================
+       HISTORY SECTION
+    ============================================================ */
     .history-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .history-header h2 { font-size: 0.9rem; color: var(--text2); }
-    #history-list { display: flex; flex-direction: column; gap: 12px; }
+    .history-header h2 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
 
+    #history-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px 20px;
+      color: var(--text3);
+      font-size: 0.84rem;
+      line-height: 1.8;
+    }
+    .empty-state .empty-icon { font-size: 2.2rem; display: block; margin-bottom: 8px; }
+
+    /* Message block */
     .msg-block {
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       overflow: hidden;
       border: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      border-left: 3px solid var(--g1);
+      animation: fade-up .35s ease;
     }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
     .msg-question {
-      background: var(--surface2);
-      padding: 10px 14px;
+      background: rgba(30, 41, 80, 0.4);
+      padding: 12px 16px;
       font-size: 0.88rem;
-      line-height: 1.5;
+      line-height: 1.6;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
     }
-    .msg-question .msg-meta {
-      font-size: 0.72rem;
-      color: var(--text2);
-      margin-bottom: 4px;
+    .msg-meta {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      margin-bottom: 6px;
     }
-    .msg-answer {
-      background: var(--surface);
-      padding: 12px 14px;
+    .msg-meta .meta-mode {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(124, 58, 237, 0.18);
+      color: #a78bfa;
+      letter-spacing: .03em;
     }
+    .msg-meta .meta-time {
+      font-size: 0.7rem;
+      color: var(--text3);
+      margin-left: auto;
+    }
+
+    .msg-answer { padding: 14px 16px; }
+
+    /* Answer tabs */
     .answer-tabs {
       display: flex;
       gap: 6px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
     .answer-tab {
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      border: 1px solid var(--border);
+      font-size: 0.74rem;
+      font-weight: 700;
+      border: 1px solid var(--border-bright);
       background: transparent;
-      color: var(--text2);
+      color: var(--text3);
+      letter-spacing: .02em;
+      transition: all .2s;
     }
-    .answer-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .answer-content { font-size: 0.88rem; line-height: 1.7; white-space: pre-wrap; }
-    .answer-content.hidden { display: none; }
-    .keywords-wrap {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .kw-tag {
-      background: var(--surface2);
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      padding: 3px 9px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
+    .answer-tab:hover { color: var(--text2); border-color: rgba(124,58,237,0.4); }
+    .answer-tab.active {
+      background: var(--grad);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 3px 10px rgba(124, 58, 237, 0.35);
     }
 
-    /* ========== LOADING ========== */
+    .answer-content {
+      font-size: 0.88rem;
+      line-height: 1.8;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .answer-content.hidden { display: none; }
+
+    .keywords-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
+    .kw-tag {
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.35);
+      color: #c4b5fd;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    /* ============================================================
+       LOADING BLOCK
+    ============================================================ */
     .loading-block {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
+      padding: 18px 16px;
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 0.85rem;
+      gap: 12px;
+      font-size: 0.84rem;
       color: var(--text2);
     }
     .spinner {
-      width: 18px; height: 18px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
+      width: 20px; height: 20px;
+      border: 2px solid rgba(148, 163, 220, 0.15);
+      border-top-color: var(--g1);
       border-radius: 50%;
       animation: spin .7s linear infinite;
+      flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ========== TOAST ========== */
-    #toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 18px;
-      border-radius: 24px;
-      font-size: 0.85rem;
-      transition: transform .3s ease;
-      z-index: 200;
-      white-space: nowrap;
-    }
-    #toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* ========== SETUP TAB ========== */
+    /* ============================================================
+       SETUP PANE
+    ============================================================ */
     .setup-save-row {
       display: flex;
       justify-content: flex-end;
-      margin-top: 4px;
+      margin-top: 16px;
     }
 
-    /* ========== RESPONSIVE ========== */
+    .how-to-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .how-to-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.84rem;
+      color: var(--text2);
+      line-height: 1.55;
+    }
+    .how-to-list .step-num {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--grad);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    /* ============================================================
+       TOAST
+    ============================================================ */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(15, 23, 48, 0.92);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      border: 1px solid var(--border-bright);
+      color: var(--text);
+      padding: 11px 22px;
+      border-radius: 24px;
+      font-size: 0.84rem;
+      font-weight: 500;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+      z-index: 999;
+      white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ============================================================
+       SCROLLBAR
+    ============================================================ */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,220,0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,220,0.4); }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
     @media (max-width: 480px) {
-      header { padding: 10px 14px; }
-      .pane { padding: 12px; }
-      .card { padding: 14px; }
+      header { padding: 0 14px; }
+      .pane { padding: 14px 12px 28px; gap: 13px; }
+      .card { padding: 16px; }
+      .mic-panel { padding: 22px 16px 18px; }
+      #btn-mic { width: 84px; height: 84px; font-size: 0.82rem; }
+    }
+
+    @media (min-width: 640px) {
+      .pane { padding: 20px; max-width: 680px; margin: 0 auto; width: 100%; }
     }
   </style>
 </head>
 <body>
 
+<!-- ===== HEADER ===== -->
 <header>
-  <h1>🎤 面接AI アシスタント</h1>
-  <div class="header-actions">
-    <span id="mode-badge" class="badge badge-applicant">就活生モード</span>
+  <div class="logo">
+    <div class="logo-icon-wrap">🎤</div>
+    <div class="logo-texts">
+      <span class="logo-main">面接AI アシスタント</span>
+      <span class="logo-sub">INTERVIEW AI ASSISTANT</span>
+    </div>
   </div>
+  <span id="mode-badge" class="badge badge-applicant">就活生モード</span>
 </header>
 
-<div class="tab-bar">
-  <button class="tab-btn active" onclick="showTab('chat')">💬 面接</button>
-  <button class="tab-btn" onclick="showTab('setup')">⚙️ 設定</button>
-</div>
+<!-- ===== TAB BAR ===== -->
+<nav class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('chat')">
+    <span class="tab-emoji">💬</span>面接
+  </button>
+  <button class="tab-btn" onclick="showTab('setup')">
+    <span class="tab-emoji">⚙️</span>設定
+  </button>
+</nav>
 
 <main>
-  <!-- ===== CHAT PANE ===== -->
+  <!-- ========== CHAT PANE ========== -->
   <div id="pane-chat" class="pane active">
 
     <!-- Mode Toggle -->
-    <div class="card" style="padding:12px">
+    <div class="card" style="padding:16px">
       <div class="mode-toggle">
         <button id="btn-applicant" class="active" onclick="setMode('applicant')">🎓 就活生モード</button>
         <button id="btn-interviewer" onclick="setMode('interviewer')">👔 面接官モード</button>
       </div>
-      <p id="mode-desc" style="font-size:.78rem;color:var(--text2);margin-top:8px;text-align:center;">
-        あなたが答えるべき回答例・アドバイスを生成します
-      </p>
+      <p id="mode-desc">あなたが答えるべき回答例・アドバイスを生成します</p>
     </div>
 
     <!-- Mic Panel -->
-    <div class="mic-panel">
-      <div class="mic-header">
-        <div class="mic-status">
-          <div class="mic-dot" id="mic-dot"></div>
-          <span id="mic-status-text">マイク停止中</span>
+    <div class="mic-panel card">
+
+      <!-- Big circular button + ripple rings -->
+      <div class="mic-center">
+        <div class="mic-rings">
+          <div class="ring ring1"></div>
+          <div class="ring ring2"></div>
         </div>
-        <div style="display:flex;gap:6px">
-          <button class="btn-primary btn-sm" id="btn-mic" onclick="toggleMic()">🎤 開始</button>
-          <button class="btn-ghost btn-sm" onclick="sendManual()">▶ 送信</button>
-        </div>
+        <button id="btn-mic" onclick="toggleMic()">🎤 開始</button>
       </div>
-      <div id="transcript-box"><span class="transcript-interim">音声認識を開始するには「開始」を押してください</span></div>
-      <div class="silence-bar"><div class="silence-fill" id="silence-fill"></div></div>
-      <p style="font-size:.72rem;color:var(--text2);margin-top:6px;text-align:right;" id="silence-label">無音検知: 1.8秒でAI送信</p>
+
+      <!-- Status row -->
+      <div class="mic-status-row">
+        <div class="mic-dot" id="mic-dot"></div>
+        <span id="mic-status-text">マイク停止中</span>
+        <button class="btn-send" onclick="sendManual()">送信 ▶</button>
+      </div>
+
+      <!-- Transcript -->
+      <div id="transcript-box">
+        <span class="transcript-interim">音声認識を開始するには「開始」を押してください</span>
+      </div>
+
+      <!-- Silence progress -->
+      <div class="silence-bar">
+        <div class="silence-fill" id="silence-fill"></div>
+      </div>
+      <p class="silence-label" id="silence-label">無音検知: 1.8秒でAI送信</p>
+
     </div>
 
-    <!-- History -->
-    <div>
-      <div class="history-header">
-        <h2>📋 会話履歴</h2>
-        <button class="btn-danger btn-sm" onclick="clearHistory()">クリア</button>
-      </div>
+    <!-- History header -->
+    <div class="history-header">
+      <h2>📋 会話履歴</h2>
+      <button class="btn-danger btn-sm" onclick="clearHistory()">クリア</button>
     </div>
+
+    <!-- History list -->
     <div id="history-list">
-      <p style="font-size:.82rem;color:var(--text2);text-align:center;padding:20px 0;">
-        まだ履歴がありません。音声を入力してください。
-      </p>
+      <div class="empty-state">
+        <span class="empty-icon">🗒️</span>
+        まだ履歴がありません。<br>マイクを開始して話しかけてください。
+      </div>
     </div>
 
   </div>
 
-  <!-- ===== SETUP PANE ===== -->
+  <!-- ========== SETUP PANE ========== -->
   <div id="pane-setup" class="pane">
 
+    <!-- API Key -->
     <div class="card">
-      <h2>🔑 Gemini API キー</h2>
+      <p class="section-title">🔑 Gemini API キー</p>
       <div class="api-row">
         <input type="password" id="api-key" placeholder="AIza..." />
         <button class="btn-primary btn-sm" onclick="saveApiKey()">保存</button>
       </div>
-      <p style="font-size:.72rem;color:var(--text2);margin-top:6px;">
-        キーはブラウザのsessionStorageにのみ保存されます。外部送信されません。
+      <p style="font-size:.71rem;color:var(--text3);margin-top:8px;line-height:1.6;">
+        キーはブラウザの sessionStorage にのみ保存されます。外部には一切送信されません。
       </p>
     </div>
 
+    <!-- Profile -->
     <div class="card">
-      <h2>👤 あなたのプロフィール</h2>
+      <p class="section-title">👤 あなたのプロフィール</p>
 
       <label>ガクチカ（学生時代に力を入れたこと）</label>
-      <textarea id="gakuchika" rows="3" placeholder="例：サークルでリーダーを務め、メンバーのモチベーション管理に注力しました..."></textarea>
+      <textarea id="gakuchika" rows="3"
+        placeholder="例：サークルでリーダーを務め、メンバーのモチベーション管理に注力しました..."></textarea>
 
       <label>志望理由</label>
-      <textarea id="reason" rows="3" placeholder="例：御社の◯◯という事業に共感し、自分の◯◯スキルを活かしたいと思いました..."></textarea>
+      <textarea id="reason" rows="3"
+        placeholder="例：御社の◯◯という事業に共感し、自分の◯◯スキルを活かしたいと思いました..."></textarea>
 
       <label>志望業界</label>
       <input type="text" id="industry" placeholder="例：IT・SaaS、金融、コンサルティング" />
@@ -462,15 +867,16 @@
       </div>
     </div>
 
+    <!-- How to use -->
     <div class="card">
-      <h2>ℹ️ 使い方</h2>
-      <ol style="font-size:.82rem;color:var(--text2);line-height:2;padding-left:18px;">
-        <li>APIキーを入力して保存</li>
-        <li>プロフィールを入力して保存</li>
-        <li>「面接」タブに切り替え</li>
-        <li>モードを選択（就活生 or 面接官）</li>
-        <li>「🎤 開始」を押して話す</li>
-        <li>1.8秒の無音でAIが自動回答</li>
+      <p class="section-title">ℹ️ 使い方</p>
+      <ol class="how-to-list">
+        <li><span class="step-num">1</span>APIキーを入力して保存</li>
+        <li><span class="step-num">2</span>プロフィールを入力して保存</li>
+        <li><span class="step-num">3</span>「面接」タブに切り替え</li>
+        <li><span class="step-num">4</span>モードを選択（就活生 or 面接官）</li>
+        <li><span class="step-num">5</span>「🎤 開始」を押して話す</li>
+        <li><span class="step-num">6</span>1.8秒の無音でAIが自動回答</li>
       </ol>
     </div>
 
@@ -896,6 +1302,8 @@ function clearEmptyHistoryMsg() {
   const list = document.getElementById('history-list');
   const empty = list.querySelector('p');
   if (empty) empty.remove();
+  const emptyDiv = list.querySelector('.empty-state');
+  if (emptyDiv) emptyDiv.remove();
 }
 
 function escHtml(str) {
