@@ -856,6 +856,55 @@
     .vr-actions button { flex: 1; }
 
     /* ============================================================
+       TEXT INPUT FALLBACK (iOS Safari)
+    ============================================================ */
+    #mic-section { display: contents; } /* pass-through: children act as direct flex children */
+
+    .text-input-panel {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+    .text-input-panel.active { display: flex; }
+
+    .text-input-hint {
+      font-size: 0.75rem;
+      color: var(--text3);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .text-input-hint strong { color: var(--warn); }
+
+    #text-input {
+      width: 100%;
+      background: rgba(8, 12, 20, 0.6);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-xs);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.92rem;
+      padding: 12px 14px;
+      outline: none;
+      resize: none;
+      min-height: 88px;
+      line-height: 1.65;
+      transition: border-color .2s, box-shadow .2s;
+      -webkit-appearance: none;
+    }
+    #text-input:focus {
+      border-color: var(--g1);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+    }
+    #text-input::placeholder { color: var(--text3); }
+
+    .text-send-row {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* ============================================================
        RESPONSIVE
     ============================================================ */
     @media (max-width: 480px) {
@@ -918,33 +967,50 @@
     <!-- Mic Panel -->
     <div class="mic-panel card">
 
-      <!-- Big circular button + ripple rings -->
-      <div class="mic-center">
-        <div class="mic-rings">
-          <div class="ring ring1"></div>
-          <div class="ring ring2"></div>
+      <!-- Mic section: hidden when SpeechRecognition unavailable -->
+      <div id="mic-section">
+
+        <!-- Big circular button + ripple rings -->
+        <div class="mic-center">
+          <div class="mic-rings">
+            <div class="ring ring1"></div>
+            <div class="ring ring2"></div>
+          </div>
+          <button id="btn-mic" onclick="toggleMic()">🎤 開始</button>
         </div>
-        <button id="btn-mic" onclick="toggleMic()">🎤 開始</button>
+
+        <!-- Status row -->
+        <div class="mic-status-row">
+          <div class="mic-dot" id="mic-dot"></div>
+          <span id="mic-status-text">マイク停止中</span>
+          <button id="btn-speaker-toggle" class="btn-speaker-toggle" onclick="manualSpeakerToggle()" style="display:none">切替</button>
+          <button class="btn-send" onclick="sendManual()">送信 ▶</button>
+        </div>
+
+        <!-- Transcript -->
+        <div id="transcript-box">
+          <span class="transcript-interim">音声認識を開始するには「開始」を押してください</span>
+        </div>
+
+        <!-- Silence progress -->
+        <div class="silence-bar">
+          <div class="silence-fill" id="silence-fill"></div>
+        </div>
+        <p class="silence-label" id="silence-label">無音検知: 1.8秒でAI送信</p>
+
       </div>
 
-      <!-- Status row -->
-      <div class="mic-status-row">
-        <div class="mic-dot" id="mic-dot"></div>
-        <span id="mic-status-text">マイク停止中</span>
-        <button id="btn-speaker-toggle" class="btn-speaker-toggle" onclick="manualSpeakerToggle()" style="display:none">切替</button>
-        <button class="btn-send" onclick="sendManual()">送信 ▶</button>
+      <!-- Text input fallback: shown when SpeechRecognition unavailable -->
+      <div id="text-input-panel" class="text-input-panel">
+        <p class="text-input-hint">
+          <strong>⚠️ このブラウザは音声認識に対応していません</strong><br>
+          テキストで入力してください（Enterで送信、Shift+Enterで改行）
+        </p>
+        <textarea id="text-input" placeholder="質問や発言を入力してください..."></textarea>
+        <div class="text-send-row">
+          <button class="btn-primary" onclick="sendTextInput()">送信 ▶</button>
+        </div>
       </div>
-
-      <!-- Transcript -->
-      <div id="transcript-box">
-        <span class="transcript-interim">音声認識を開始するには「開始」を押してください</span>
-      </div>
-
-      <!-- Silence progress -->
-      <div class="silence-bar">
-        <div class="silence-fill" id="silence-fill"></div>
-      </div>
-      <p class="silence-label" id="silence-label">無音検知: 1.8秒でAI送信</p>
 
     </div>
 
@@ -1082,6 +1148,7 @@ window.addEventListener('load', () => {
   if (profile.industry)  document.getElementById('industry').value  = profile.industry;
   if (profile.company)   document.getElementById('company').value   = profile.company;
   if (profile.skills)    document.getElementById('skills').value    = profile.skills;
+  initInputMode();
   checkVoiceProfiles();
 });
 
@@ -1141,6 +1208,33 @@ function saveProfile() {
 // ============================================================
 //  SPEECH RECOGNITION
 // ============================================================
+// ---- Input mode detection ----
+function initInputMode() {
+  const hasSpeech = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  if (hasSpeech) return; // mic UI already visible by default
+
+  // Hide mic UI, show text input
+  document.getElementById('mic-section').style.display = 'none';
+  document.getElementById('text-input-panel').classList.add('active');
+
+  // Enter to send, Shift+Enter for newline
+  document.getElementById('text-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendTextInput();
+    }
+  });
+}
+
+function sendTextInput() {
+  const el   = document.getElementById('text-input');
+  const text = el.value.trim();
+  if (!text) return;
+  el.value = '';
+  el.style.height = '';
+  sendToAI(text);
+}
+
 function toggleMic() {
   if (isListening) stopMic();
   else startMic();
@@ -1149,7 +1243,7 @@ function toggleMic() {
 function startMic() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    toast('このブラウザは音声認識に対応していません');
+    // Should not reach here (mic UI is hidden), but guard anyway
     return;
   }
   recognition = new SpeechRecognition();
