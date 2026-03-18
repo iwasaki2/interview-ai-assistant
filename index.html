@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>面接AI アシスタント</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #242740;
+      --border: #2e3250;
+      --accent: #6c63ff;
+      --accent2: #48cfad;
+      --text: #e8eaf6;
+      --text2: #9fa8c7;
+      --danger: #ff5370;
+      --warn: #ffcb6b;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ========== HEADER ========== */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ========== BUTTON ========== */
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      transition: all .2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { filter: brightness(1.15); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+    .btn-danger {
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+
+    /* ========== BADGE ========== */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-interviewer { background: #3f2d6e; color: #b39ddb; }
+    .badge-applicant  { background: #1b3a2f; color: #80cbc4; }
+
+    /* ========== TABS ========== */
+    .tab-bar {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 11px;
+      background: transparent;
+      border-radius: 0;
+      border-bottom: 3px solid transparent;
+      color: var(--text2);
+      font-size: 0.82rem;
+    }
+    .tab-btn.active {
+      border-bottom-color: var(--accent);
+      color: var(--text);
+    }
+
+    /* ========== MAIN LAYOUT ========== */
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .pane { display: none; flex: 1; overflow-y: auto; padding: 16px; }
+    .pane.active { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ========== FORM ========== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .card h2 {
+      font-size: 0.9rem;
+      color: var(--text2);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text2);
+      margin-bottom: 4px;
+      margin-top: 10px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input[type=text], input[type=password], textarea, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 0.88rem;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+      resize: vertical;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    select option { background: var(--surface2); }
+    .api-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .api-row input { flex: 1; }
+
+    /* ========== MODE TOGGLE ========== */
+    .mode-toggle {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .mode-toggle button {
+      flex: 1;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text2);
+      border-bottom: none;
+      padding: 9px;
+    }
+    .mode-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ========== MIC PANEL ========== */
+    .mic-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .mic-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .mic-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+    .mic-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--text2);
+      transition: background .3s;
+    }
+    .mic-dot.listening { background: var(--danger); animation: pulse 1s infinite; }
+    .mic-dot.processing { background: var(--warn); }
+    .mic-dot.ready { background: var(--accent2); }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+    #transcript-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      min-height: 60px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .transcript-interim { color: var(--text2); font-style: italic; }
+    .silence-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .silence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width .1s linear;
+    }
+
+    /* ========== HISTORY ========== */
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .history-header h2 { font-size: 0.9rem; color: var(--text2); }
+    #history-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .msg-block {
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .msg-question {
+      background: var(--surface2);
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .msg-question .msg-meta {
+      font-size: 0.72rem;
+      color: var(--text2);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .msg-answer {
+      background: var(--surface);
+      padding: 12px 14px;
+    }
+    .answer-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .answer-tab {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+    }
+    .answer-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .answer-content { font-size: 0.88rem; line-height: 1.7; white-space: pre-wrap; }
+    .answer-content.hidden { display: none; }
+    .keywords-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .kw-tag {
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* ========== LOADING ========== */
+    .loading-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text2);
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ========== TOAST ========== */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 24px;
+      font-size: 0.85rem;
+      transition: transform .3s ease;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ========== SETUP TAB ========== */
+    .setup-save-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 480px) {
+      header { padding: 10px 14px; }
+      .pane { padding: 12px; }
+      .card { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎤 面接AI アシスタント</h1>
+  <div class="header-actions">
+    <span id="mode-badge" class="badge badge-applicant">就活生モード</span>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('chat')">💬 面接</button>
+  <button class="tab-btn" onclick="showTab('setup')">⚙️ 設定</button>
+</div>
+
+<main>
+  <!-- ===== CHAT PANE ===== -->
+  <div id="pane-chat" class="pane active">
+
+    <!-- Mode Toggle -->
+    <div class="card" style="padding:12px">
+      <div class="mode-toggle">
+        <button id="btn-applicant" class="active" onclick="setMode('applicant')">🎓 就活生モード</button>
+        <button id="btn-interviewer" onclick="setMode('interviewer')">👔 面接官モード</button>
+      </div>
+      <p id="mode-desc" style="font-size:.78rem;color:var(--text2);margin-top:8px;text-align:center;">
+        あなたが答えるべき回答例・アドバイスを生成します
+      </p>
+    </div>
+
+    <!-- Mic Panel -->
+    <div class="mic-panel">
+      <div class="mic-header">
+        <div class="mic-status">
+          <div class="mic-dot" id="mic-dot"></div>
+          <span id="mic-status-text">マイク停止中</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-primary btn-sm" id="btn-mic" onclick="toggleMic()">🎤 開始</button>
+          <button class="btn-ghost btn-sm" onclick="sendManual()">▶ 送信</button>
+        </div>
+      </div>
+      <div id="transcript-box"><span class="transcript-interim">音声認識を開始するには「開始」を押してください</span></div>
+      <div class="silence-bar"><div class="silence-fill" id="silence-fill"></div></div>
+      <p style="font-size:.72rem;color:var(--text2);margin-top:6px;text-align:right;" id="silence-label">無音検知: 1.8秒でAI送信</p>
+    </div>
+
+    <!-- History -->
+    <div>
+      <div class="history-header">
+        <h2>📋 会話履歴</h2>
+        <button class="btn-danger btn-sm" onclick="clearHistory()">クリア</button>
+      </div>
+    </div>
+    <div id="history-list">
+      <p style="font-size:.82rem;color:var(--text2);text-align:center;padding:20px 0;">
+        まだ履歴がありません。音声を入力してください。
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ===== SETUP PANE ===== -->
+  <div id="pane-setup" class="pane">
+
+    <div class="card">
+      <h2>🔑 Claude API キー</h2>
+      <div class="api-row">
+        <input type="password" id="api-key" placeholder="sk-ant-..." />
+        <button class="btn-primary btn-sm" onclick="saveApiKey()">保存</button>
+      </div>
+      <p style="font-size:.72rem;color:var(--text2);margin-top:6px;">
+        キーはブラウザのsessionStorageにのみ保存されます。外部送信されません。
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>👤 あなたのプロフィール</h2>
+
+      <label>ガクチカ（学生時代に力を入れたこと）</label>
+      <textarea id="gakuchika" rows="3" placeholder="例：サークルでリーダーを務め、メンバーのモチベーション管理に注力しました..."></textarea>
+
+      <label>志望理由</label>
+      <textarea id="reason" rows="3" placeholder="例：御社の◯◯という事業に共感し、自分の◯◯スキルを活かしたいと思いました..."></textarea>
+
+      <label>志望業界</label>
+      <input type="text" id="industry" placeholder="例：IT・SaaS、金融、コンサルティング" />
+
+      <label>企業名（志望先）</label>
+      <input type="text" id="company" placeholder="例：株式会社◯◯" />
+
+      <label>アピールスキル・強み</label>
+      <input type="text" id="skills" placeholder="例：リーダーシップ、データ分析、英語（TOEIC 850）" />
+
+      <div class="setup-save-row">
+        <button class="btn-primary" onclick="saveProfile()">💾 プロフィールを保存</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ℹ️ 使い方</h2>
+      <ol style="font-size:.82rem;color:var(--text2);line-height:2;padding-left:18px;">
+        <li>APIキーを入力して保存</li>
+        <li>プロフィールを入力して保存</li>
+        <li>「面接」タブに切り替え</li>
+        <li>モードを選択（就活生 or 面接官）</li>
+        <li>「🎤 開始」を押して話す</li>
+        <li>1.8秒の無音でAIが自動回答</li>
+      </ol>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+let apiKey = sessionStorage.getItem('interview_api_key') || '';
+let profile = JSON.parse(localStorage.getItem('interview_profile') || '{}');
+let mode = 'applicant'; // applicant | interviewer
+let history = [];       // [{role, text, answer}]
+
+let recognition = null;
+let isListening = false;
+let finalTranscript = '';
+let interimTranscript = '';
+let silenceTimer = null;
+let silenceStart = null;
+let silenceFillInterval = null;
+const SILENCE_DELAY = 1800; // ms
+
+// ============================================================
+//  INIT
+// ============================================================
+window.addEventListener('load', () => {
+  if (apiKey) {
+    document.getElementById('api-key').value = apiKey;
+  }
+  if (profile.gakuchika) document.getElementById('gakuchika').value = profile.gakuchika;
+  if (profile.reason)    document.getElementById('reason').value    = profile.reason;
+  if (profile.industry)  document.getElementById('industry').value  = profile.industry;
+  if (profile.company)   document.getElementById('company').value   = profile.company;
+  if (profile.skills)    document.getElementById('skills').value    = profile.skills;
+});
+
+// ============================================================
+//  TAB
+// ============================================================
+function showTab(name) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  const idx = name === 'chat' ? 0 : 1;
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+}
+
+// ============================================================
+//  MODE
+// ============================================================
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-applicant').classList.toggle('active', m === 'applicant');
+  document.getElementById('btn-interviewer').classList.toggle('active', m === 'interviewer');
+  const badge = document.getElementById('mode-badge');
+  const desc  = document.getElementById('mode-desc');
+  if (m === 'applicant') {
+    badge.className = 'badge badge-applicant';
+    badge.textContent = '就活生モード';
+    desc.textContent = 'あなたが答えるべき回答例・アドバイスを生成します';
+  } else {
+    badge.className = 'badge badge-interviewer';
+    badge.textContent = '面接官モード';
+    desc.textContent = '面接官として次の質問や評価ポイントを生成します';
+  }
+}
+
+// ============================================================
+//  SETTINGS
+// ============================================================
+function saveApiKey() {
+  apiKey = document.getElementById('api-key').value.trim();
+  sessionStorage.setItem('interview_api_key', apiKey);
+  toast('APIキーを保存しました');
+}
+
+function saveProfile() {
+  profile = {
+    gakuchika: document.getElementById('gakuchika').value.trim(),
+    reason:    document.getElementById('reason').value.trim(),
+    industry:  document.getElementById('industry').value.trim(),
+    company:   document.getElementById('company').value.trim(),
+    skills:    document.getElementById('skills').value.trim(),
+  };
+  localStorage.setItem('interview_profile', JSON.stringify(profile));
+  toast('プロフィールを保存しました');
+}
+
+// ============================================================
+//  SPEECH RECOGNITION
+// ============================================================
+function toggleMic() {
+  if (isListening) stopMic();
+  else startMic();
+}
+
+function startMic() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toast('このブラウザは音声認識に対応していません');
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'ja-JP';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isListening = true;
+    setMicStatus('listening');
+    document.getElementById('btn-mic').textContent = '⏹ 停止';
+    finalTranscript = '';
+    interimTranscript = '';
+    renderTranscript();
+  };
+
+  recognition.onresult = (e) => {
+    interimTranscript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        finalTranscript += e.results[i][0].transcript;
+      } else {
+        interimTranscript += e.results[i][0].transcript;
+      }
+    }
+    renderTranscript();
+    resetSilenceTimer();
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error !== 'no-speech') {
+      toast('音声認識エラー: ' + e.error);
+    }
+  };
+
+  recognition.onend = () => {
+    // auto-restart if still supposed to be listening
+    if (isListening) {
+      try { recognition.start(); } catch(err) {}
+    }
+  };
+
+  recognition.start();
+}
+
+function stopMic() {
+  isListening = false;
+  clearSilenceTimer();
+  if (recognition) {
+    recognition.stop();
+    recognition = null;
+  }
+  setMicStatus('idle');
+  document.getElementById('btn-mic').textContent = '🎤 開始';
+}
+
+function setMicStatus(state) {
+  const dot  = document.getElementById('mic-dot');
+  const text = document.getElementById('mic-status-text');
+  dot.className = 'mic-dot';
+  if (state === 'listening')   { dot.classList.add('listening');   text.textContent = '音声認識中...'; }
+  else if (state === 'processing') { dot.classList.add('processing'); text.textContent = 'AI処理中...'; }
+  else if (state === 'ready')  { dot.classList.add('ready');        text.textContent = '完了'; }
+  else { text.textContent = 'マイク停止中'; }
+}
+
+function renderTranscript() {
+  const box = document.getElementById('transcript-box');
+  if (!finalTranscript && !interimTranscript) {
+    box.innerHTML = '<span class="transcript-interim">話してください...</span>';
+    return;
+  }
+  box.innerHTML = (finalTranscript || '') +
+    (interimTranscript ? `<span class="transcript-interim">${interimTranscript}</span>` : '');
+}
+
+// ============================================================
+//  SILENCE TIMER
+// ============================================================
+function resetSilenceTimer() {
+  clearSilenceTimer();
+  silenceStart = Date.now();
+  document.getElementById('silence-fill').style.width = '0%';
+
+  silenceFillInterval = setInterval(() => {
+    const elapsed = Date.now() - silenceStart;
+    const pct = Math.min((elapsed / SILENCE_DELAY) * 100, 100);
+    document.getElementById('silence-fill').style.width = pct + '%';
+  }, 50);
+
+  silenceTimer = setTimeout(() => {
+    clearInterval(silenceFillInterval);
+    document.getElementById('silence-fill').style.width = '100%';
+    const text = (finalTranscript + interimTranscript).trim();
+    if (text) {
+      sendToAI(text);
+      finalTranscript = '';
+      interimTranscript = '';
+      renderTranscript();
+    }
+  }, SILENCE_DELAY);
+}
+
+function clearSilenceTimer() {
+  clearTimeout(silenceTimer);
+  clearInterval(silenceFillInterval);
+  silenceTimer = null;
+  silenceFillInterval = null;
+  document.getElementById('silence-fill').style.width = '0%';
+}
+
+function sendManual() {
+  clearSilenceTimer();
+  const text = (finalTranscript + interimTranscript).trim();
+  if (!text) { toast('テキストがありません'); return; }
+  sendToAI(text);
+  finalTranscript = '';
+  interimTranscript = '';
+  renderTranscript();
+}
+
+// ============================================================
+//  CLAUDE API
+// ============================================================
+async function sendToAI(text) {
+  if (!apiKey) {
+    toast('⚠️ APIキーを設定してください（設定タブ）');
+    return;
+  }
+
+  setMicStatus('processing');
+
+  // Add loading item to history
+  const loadingId = 'loading-' + Date.now();
+  addLoadingBlock(loadingId, text);
+
+  const systemPrompt = buildSystemPrompt();
+  const messages = buildMessages(text);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages: messages,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`API Error ${res.status}: ${errBody}`);
+    }
+
+    const data = await res.json();
+    const rawAnswer = data.content[0].text;
+    const parsed = parseAnswer(rawAnswer);
+
+    // Replace loading block with real answer
+    replaceLoadingBlock(loadingId, text, parsed);
+
+    // Save to history
+    history.push({ role: mode, text, answer: parsed });
+
+    setMicStatus(isListening ? 'listening' : 'idle');
+  } catch (err) {
+    console.error(err);
+    removeLoadingBlock(loadingId);
+    toast('エラー: ' + err.message.slice(0, 60));
+    setMicStatus(isListening ? 'listening' : 'idle');
+  }
+}
+
+function buildSystemPrompt() {
+  const p = profile;
+  const profileText = `
+【応募者プロフィール】
+- ガクチカ: ${p.gakuchika || '未入力'}
+- 志望理由: ${p.reason || '未入力'}
+- 志望業界: ${p.industry || '未入力'}
+- 志望企業: ${p.company || '未入力'}
+- アピールスキル: ${p.skills || '未入力'}
+`.trim();
+
+  if (mode === 'applicant') {
+    return `あなたは就職活動の面接対策AIコーチです。
+${profileText}
+
+上記の応募者が面接で質問に答えるためのサポートをしてください。
+入力されたテキストは面接官の質問または就活生本人の発言です。
+
+必ず以下のJSON形式で返答してください（マークダウンコードブロック不要、JSONのみ）：
+{
+  "main": "メイン回答（200〜300文字程度。このプロフィールを踏まえた具体的な回答例）",
+  "points": "回答のポイント・アドバイス（箇条書き、改行区切り）",
+  "keywords": ["キーワード1", "キーワード2", "キーワード3"]
+}`;
+  } else {
+    return `あなたは厳格かつ公正な面接官AIです。
+${profileText}
+
+上記のプロフィールの就活生が発言しています。
+面接官として、次の質問・深掘り・評価コメントを生成してください。
+
+必ず以下のJSON形式で返答してください（マークダウンコードブロック不要、JSONのみ）：
+{
+  "main": "次の面接官質問または評価コメント（具体的かつ鋭い内容）",
+  "points": "この質問で見極めるポイント・評価軸（箇条書き、改行区切り）",
+  "keywords": ["評価軸1", "評価軸2", "評価軸3"]
+}`;
+  }
+}
+
+function buildMessages(text) {
+  const msgs = [];
+  // Include last 4 exchanges as context
+  const recent = history.slice(-4);
+  for (const h of recent) {
+    msgs.push({ role: 'user', content: h.text });
+    msgs.push({ role: 'assistant', content: JSON.stringify(h.answer) });
+  }
+  msgs.push({ role: 'user', content: text });
+  return msgs;
+}
+
+function parseAnswer(raw) {
+  try {
+    // Strip possible markdown code fences
+    const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return { main: raw, points: '', keywords: [] };
+  }
+}
+
+// ============================================================
+//  HISTORY RENDERING
+// ============================================================
+function clearHistory() {
+  history = [];
+  document.getElementById('history-list').innerHTML =
+    '<p style="font-size:.82rem;color:var(--text2);text-align:center;padding:20px 0;">まだ履歴がありません。音声を入力してください。</p>';
+  toast('履歴をクリアしました');
+}
+
+function addLoadingBlock(id, text) {
+  clearEmptyHistoryMsg();
+  const list = document.getElementById('history-list');
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'msg-block';
+  div.innerHTML = `
+    <div class="msg-question">
+      <div class="msg-meta">
+        <span>${mode === 'applicant' ? '🎓 就活生モード' : '👔 面接官モード'}</span>
+        <span>${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})}</span>
+      </div>
+      ${escHtml(text)}
+    </div>
+    <div class="loading-block">
+      <div class="spinner"></div>
+      <span>AIが回答を生成中...</span>
+    </div>`;
+  list.prepend(div);
+}
+
+function replaceLoadingBlock(id, text, parsed) {
+  const block = document.getElementById(id);
+  if (!block) return;
+
+  const hasKeywords = parsed.keywords && parsed.keywords.length > 0;
+  const kwHtml = hasKeywords
+    ? parsed.keywords.map(k => `<span class="kw-tag">${escHtml(k)}</span>`).join('')
+    : '';
+  const pointsLines = (parsed.points || '').split('\n').filter(l => l.trim());
+  const pointsHtml = pointsLines.length
+    ? pointsLines.map(l => `• ${escHtml(l.replace(/^[・•-]\s*/, ''))}`).join('\n')
+    : '(なし)';
+
+  const uid = 'a' + Date.now();
+  block.innerHTML = `
+    <div class="msg-question">
+      <div class="msg-meta">
+        <span>${mode === 'applicant' ? '🎓 就活生モード' : '👔 面接官モード'}</span>
+        <span>${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})}</span>
+      </div>
+      ${escHtml(text)}
+    </div>
+    <div class="msg-answer">
+      <div class="answer-tabs">
+        <button class="answer-tab active" onclick="switchAnswerTab('${uid}','main',this)">💬 回答</button>
+        <button class="answer-tab" onclick="switchAnswerTab('${uid}','points',this)">📌 ポイント</button>
+        ${hasKeywords ? `<button class="answer-tab" onclick="switchAnswerTab('${uid}','kw',this)">🏷 キーワード</button>` : ''}
+      </div>
+      <div id="${uid}-main" class="answer-content">${escHtml(parsed.main || '')}</div>
+      <div id="${uid}-points" class="answer-content hidden">${escHtml(pointsHtml)}</div>
+      ${hasKeywords ? `<div id="${uid}-kw" class="answer-content hidden"><div class="keywords-wrap">${kwHtml}</div></div>` : ''}
+    </div>`;
+}
+
+function removeLoadingBlock(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function switchAnswerTab(uid, tab, btn) {
+  const parent = btn.closest('.msg-answer');
+  parent.querySelectorAll('.answer-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['main','points','kw'].forEach(t => {
+    const el = document.getElementById(uid + '-' + t);
+    if (el) el.classList.toggle('hidden', t !== tab);
+  });
+}
+
+function clearEmptyHistoryMsg() {
+  const list = document.getElementById('history-list');
+  const empty = list.querySelector('p');
+  if (empty) empty.remove();
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/\n/g,'<br>');
+}
+
+// ============================================================
+//  TOAST
+// ============================================================
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
