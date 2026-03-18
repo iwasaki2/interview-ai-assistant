@@ -982,7 +982,7 @@
         <button class="btn-primary btn-sm" onclick="saveApiKey()">保存</button>
       </div>
       <p style="font-size:.71rem;color:var(--text3);margin-top:8px;line-height:1.6;">
-        キーはブラウザの sessionStorage にのみ保存されます。外部には一切送信されません。
+        キーはブラウザの localStorage にのみ保存されます。外部には一切送信されません。
       </p>
     </div>
 
@@ -1056,7 +1056,7 @@
 // ============================================================
 //  STATE
 // ============================================================
-let apiKey = sessionStorage.getItem('interview_api_key') || '';
+let apiKey = localStorage.getItem('interview_api_key') || '';
 let profile = JSON.parse(localStorage.getItem('interview_profile') || '{}');
 let mode = 'applicant'; // applicant | interviewer
 let history = [];       // [{role, text, answer}]
@@ -1121,7 +1121,7 @@ function setMode(m) {
 // ============================================================
 function saveApiKey() {
   apiKey = document.getElementById('api-key').value.trim();
-  sessionStorage.setItem('interview_api_key', apiKey);
+  localStorage.setItem('interview_api_key', apiKey);
   const preview = apiKey ? apiKey.slice(0, 4) + '...' : '(空)';
   toast(`APIキーを保存しました [${preview}]`);
 }
