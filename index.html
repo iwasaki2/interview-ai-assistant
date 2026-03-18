@@ -726,6 +726,136 @@
     ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,220,0.4); }
 
     /* ============================================================
+       HEADER RIGHT CLUSTER
+    ============================================================ */
+    .header-right { display: flex; align-items: center; gap: 8px; }
+
+    /* ============================================================
+       SPEAKER INDICATOR (header)
+    ============================================================ */
+    .speaker-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      border-radius: 20px;
+      border: 1px solid var(--border-bright);
+      background: rgba(15, 23, 48, 0.6);
+      transition: all .3s;
+      white-space: nowrap;
+    }
+    .speaker-indicator.hidden { display: none; }
+    .speaker-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background .3s, box-shadow .3s;
+    }
+    .speaker-dot.self       { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .speaker-dot.interviewer{ background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+    .speaker-dot.unknown    { background: var(--warn); }
+    .speaker-name { font-size: 0.75rem; font-weight: 700; color: var(--text); }
+    .speaker-conf { font-size: 0.67rem; color: var(--text3); }
+
+    /* manual toggle button in mic row */
+    .btn-speaker-toggle {
+      background: transparent;
+      border: 1px solid var(--border-bright);
+      color: var(--text3);
+      padding: 4px 9px;
+      border-radius: 20px;
+      font-size: 0.71rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+    .btn-speaker-toggle:hover { border-color: var(--g3); color: var(--g3); }
+
+    /* ============================================================
+       VOICE REGISTRATION MODAL
+    ============================================================ */
+    .vr-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 12, 20, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .vr-card {
+      background: rgba(15, 23, 48, 0.85);
+      border: 1px solid var(--border-bright);
+      border-radius: 26px;
+      padding: 30px 24px 26px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+    .vr-header { text-align: center; }
+    .vr-header h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      background: var(--grad-3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 7px;
+    }
+    .vr-header p { font-size: 0.8rem; color: var(--text2); line-height: 1.65; }
+    .vr-read-box {
+      background: rgba(124, 58, 237, 0.10);
+      border: 1px solid rgba(124, 58, 237, 0.32);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 0.96rem;
+      font-weight: 500;
+      line-height: 1.85;
+      color: var(--text);
+      text-align: center;
+    }
+    .vr-meter {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .vr-countdown {
+      font-size: 3.6rem;
+      font-weight: 700;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      height: 56px;
+      display: flex;
+      align-items: center;
+    }
+    .vr-rec-pulse {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 10px var(--danger);
+      animation: dot-pulse 1s infinite;
+    }
+    .vr-status {
+      font-size: 0.79rem;
+      color: var(--text2);
+      text-align: center;
+      min-height: 1.3em;
+      line-height: 1.5;
+    }
+    .vr-actions { display: flex; gap: 10px; }
+    .vr-actions button { flex: 1; }
+
+    /* ============================================================
        RESPONSIVE
     ============================================================ */
     @media (max-width: 480px) {
@@ -752,7 +882,14 @@
       <span class="logo-sub">INTERVIEW AI ASSISTANT</span>
     </div>
   </div>
-  <span id="mode-badge" class="badge badge-applicant">就活生モード</span>
+  <div class="header-right">
+    <div id="speaker-indicator" class="speaker-indicator hidden">
+      <div id="speaker-dot" class="speaker-dot"></div>
+      <span id="speaker-name" class="speaker-name"></span>
+      <span id="speaker-conf" class="speaker-conf"></span>
+    </div>
+    <span id="mode-badge" class="badge badge-applicant">就活生モード</span>
+  </div>
 </header>
 
 <!-- ===== TAB BAR ===== -->
@@ -794,6 +931,7 @@
       <div class="mic-status-row">
         <div class="mic-dot" id="mic-dot"></div>
         <span id="mic-status-text">マイク停止中</span>
+        <button id="btn-speaker-toggle" class="btn-speaker-toggle" onclick="manualSpeakerToggle()" style="display:none">切替</button>
         <button class="btn-send" onclick="sendManual()">送信 ▶</button>
       </div>
 
@@ -828,6 +966,13 @@
 
   <!-- ========== SETUP PANE ========== -->
   <div id="pane-setup" class="pane">
+
+    <!-- Voice Profile -->
+    <div class="card">
+      <p class="section-title">🎙️ 声紋登録</p>
+      <p id="voice-reg-status" style="font-size:.8rem;color:var(--text2);margin-bottom:14px;line-height:1.6;"></p>
+      <button class="btn-ghost" onclick="resetVoiceProfile()">🔄 声を再登録</button>
+    </div>
 
     <!-- API Key -->
     <div class="card">
@@ -883,6 +1028,28 @@
   </div>
 </main>
 
+<!-- ===== VOICE REGISTRATION MODAL ===== -->
+<div id="vr-overlay" class="vr-overlay" style="display:none">
+  <div class="vr-card">
+    <div class="vr-header">
+      <h2>🎤 あなたの声を登録</h2>
+      <p>声紋を登録すると、面接中に話者（あなた／面接官）をリアルタイムで自動判定します。</p>
+    </div>
+    <div class="vr-read-box">
+      私は岩崎陽生です。本日はよろしくお願いします。
+    </div>
+    <div class="vr-meter">
+      <div id="vr-countdown" class="vr-countdown" style="visibility:hidden">5</div>
+      <div id="vr-rec-pulse" class="vr-rec-pulse" style="display:none"></div>
+      <p id="vr-status" class="vr-status">「録音開始」を押してから上の文章を読んでください</p>
+    </div>
+    <div class="vr-actions">
+      <button class="btn-primary" id="vr-btn-start" onclick="vrStartRecording()">🎤 録音開始</button>
+      <button class="btn-ghost" onclick="vrSkip()">スキップ</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -915,6 +1082,7 @@ window.addEventListener('load', () => {
   if (profile.industry)  document.getElementById('industry').value  = profile.industry;
   if (profile.company)   document.getElementById('company').value   = profile.company;
   if (profile.skills)    document.getElementById('skills').value    = profile.skills;
+  checkVoiceProfiles();
 });
 
 // ============================================================
@@ -995,6 +1163,7 @@ function startMic() {
     finalTranscript = '';
     interimTranscript = '';
     renderTranscript();
+    startSpeakerIdentification();
   };
 
   recognition.onresult = (e) => {
@@ -1035,6 +1204,7 @@ function stopMic() {
   }
   setMicStatus('idle');
   document.getElementById('btn-mic').textContent = '🎤 開始';
+  stopSpeakerIdentification();
 }
 
 function setMicStatus(state) {
@@ -1330,6 +1500,319 @@ function escHtml(str) {
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;')
     .replace(/\n/g,'<br>');
+}
+
+// ============================================================
+//  VOICE BIOMETRICS
+// ============================================================
+
+// ---- State ----
+let voiceProfile       = null;   // { pitch, pitchVar, rms, zcr, mfcc[], vector[] }
+let speakerAudioCtx    = null;
+let speakerAnalyser    = null;
+let speakerStream      = null;
+let speakerInterval    = null;
+let manualOverride     = null;   // 'self' | 'interviewer' | null
+let manualOverrideTimer = null;
+const SPEAKER_THRESHOLD = 0.70;
+
+// Registration state
+let vrRecording      = false;
+let vrRecordCtx      = null;
+let vrRecordStream   = null;
+let vrCountdownTimer = null;
+let vrCollectTimer   = null;
+let vrFeatures       = [];
+
+// ---- Init & Persistence ----
+function checkVoiceProfiles() {
+  try {
+    const saved = localStorage.getItem('voice_profile_self');
+    if (saved) { voiceProfile = JSON.parse(saved); }
+  } catch(e) {}
+  updateVoiceRegStatus();
+  if (!voiceProfile) showVrModal();
+}
+
+function updateVoiceRegStatus() {
+  const el = document.getElementById('voice-reg-status');
+  if (el) el.textContent = voiceProfile
+    ? '✅ 登録済み — マイク開始時に話者を自動判定します'
+    : '❌ 未登録 — 録音して声を登録してください';
+}
+
+function resetVoiceProfile() {
+  voiceProfile = null;
+  localStorage.removeItem('voice_profile_self');
+  updateVoiceRegStatus();
+  showVrModal();
+}
+
+// ---- Modal ----
+function showVrModal() {
+  document.getElementById('vr-overlay').style.display = 'flex';
+  document.getElementById('vr-countdown').style.visibility = 'hidden';
+  document.getElementById('vr-rec-pulse').style.display = 'none';
+  document.getElementById('vr-status').textContent = '「録音開始」を押してから上の文章を読んでください';
+  const btn = document.getElementById('vr-btn-start');
+  btn.disabled = false;
+  btn.textContent = '🎤 録音開始';
+}
+
+function hideVrModal() {
+  document.getElementById('vr-overlay').style.display = 'none';
+}
+
+async function vrStartRecording() {
+  if (vrRecording) return;
+  vrRecording = true;
+  vrFeatures  = [];
+  const btn = document.getElementById('vr-btn-start');
+  btn.disabled = true;
+  btn.textContent = '録音中...';
+  document.getElementById('vr-rec-pulse').style.display = 'block';
+  document.getElementById('vr-status').textContent = 'はっきりと読んでください';
+
+  try {
+    vrRecordStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    vrRecordCtx    = new AudioContext();
+    const source   = vrRecordCtx.createMediaStreamSource(vrRecordStream);
+    const analyser = vrRecordCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    source.connect(analyser);
+
+    let remaining = 5;
+    document.getElementById('vr-countdown').style.visibility = 'visible';
+    document.getElementById('vr-countdown').textContent = remaining;
+
+    vrCollectTimer = setInterval(() => {
+      const f = extractAudioFeatures(analyser, vrRecordCtx.sampleRate);
+      if (f && f.rms > 0.005) vrFeatures.push(f);
+    }, 80);
+
+    vrCountdownTimer = setInterval(() => {
+      remaining--;
+      document.getElementById('vr-countdown').textContent = remaining;
+      if (remaining <= 0) {
+        clearInterval(vrCountdownTimer);
+        clearInterval(vrCollectTimer);
+        vrFinishRecording();
+      }
+    }, 1000);
+
+  } catch(e) {
+    vrRecording = false;
+    document.getElementById('vr-rec-pulse').style.display = 'none';
+    document.getElementById('vr-status').textContent = '❌ マイクへのアクセスが拒否されました';
+    btn.disabled = false;
+    btn.textContent = '🎤 録音開始';
+  }
+}
+
+function vrFinishRecording() {
+  vrRecording = false;
+  if (vrRecordStream) { vrRecordStream.getTracks().forEach(t => t.stop()); vrRecordStream = null; }
+  if (vrRecordCtx)    { vrRecordCtx.close(); vrRecordCtx = null; }
+  document.getElementById('vr-rec-pulse').style.display = 'none';
+  document.getElementById('vr-countdown').style.visibility = 'hidden';
+
+  if (vrFeatures.length < 5) {
+    document.getElementById('vr-status').textContent = '声が短すぎます。もう一度お試しください。';
+    const btn = document.getElementById('vr-btn-start');
+    btn.disabled = false;
+    btn.textContent = '🎤 録音開始';
+    return;
+  }
+
+  voiceProfile = averageFeatures(vrFeatures);
+  localStorage.setItem('voice_profile_self', JSON.stringify(voiceProfile));
+  updateVoiceRegStatus();
+  document.getElementById('vr-status').textContent = '✅ 登録が完了しました！';
+  setTimeout(() => { hideVrModal(); toast('声紋の登録が完了しました'); }, 900);
+}
+
+function vrSkip() {
+  vrRecording = false;
+  clearInterval(vrCountdownTimer);
+  clearInterval(vrCollectTimer);
+  if (vrRecordStream) { vrRecordStream.getTracks().forEach(t => t.stop()); vrRecordStream = null; }
+  if (vrRecordCtx)    { vrRecordCtx.close(); vrRecordCtx = null; }
+  hideVrModal();
+  toast('声紋登録をスキップしました（設定タブから再登録できます）');
+}
+
+// ---- Feature Extraction ----
+function hzToMel(hz) { return 2595 * Math.log10(1 + hz / 700); }
+function melToHz(mel) { return 700 * (Math.pow(10, mel / 2595) - 1); }
+
+function extractAudioFeatures(analyser, sampleRate) {
+  const bufLen     = analyser.fftSize;
+  const timeDomain = new Float32Array(bufLen);
+  const freqDomain = new Float32Array(analyser.frequencyBinCount);
+  analyser.getFloatTimeDomainData(timeDomain);
+  analyser.getFloatFrequencyData(freqDomain);
+
+  // RMS (volume)
+  let sumSq = 0;
+  for (let i = 0; i < bufLen; i++) sumSq += timeDomain[i] * timeDomain[i];
+  const rms = Math.sqrt(sumSq / bufLen);
+
+  // Zero Crossing Rate
+  let zcr = 0;
+  for (let i = 1; i < bufLen; i++) {
+    if ((timeDomain[i] >= 0) !== (timeDomain[i - 1] >= 0)) zcr++;
+  }
+  zcr /= bufLen;
+
+  // Pitch via autocorrelation
+  const pitch = estimatePitch(timeDomain, sampleRate);
+
+  // Simplified MFCC (13-band mel filterbank)
+  const mfcc = melFilterbank(freqDomain, sampleRate, 13);
+
+  return { rms, zcr, pitch, mfcc };
+}
+
+function estimatePitch(buffer, sampleRate) {
+  const len        = Math.min(buffer.length, 512);
+  const minPeriod  = Math.round(sampleRate / 500);  // 500 Hz upper bound
+  const maxPeriod  = Math.min(Math.round(sampleRate / 70), Math.floor(len / 2)); // 70 Hz lower
+
+  let sumSq = 0;
+  for (let i = 0; i < len; i++) sumSq += buffer[i] * buffer[i];
+  if (Math.sqrt(sumSq / len) < 0.01) return 0; // silence
+
+  let bestCorr = 0, bestPeriod = -1;
+  for (let p = minPeriod; p <= maxPeriod; p++) {
+    let corr = 0;
+    const n = len - p;
+    for (let i = 0; i < n; i++) corr += buffer[i] * buffer[i + p];
+    corr /= n;
+    if (corr > bestCorr) { bestCorr = corr; bestPeriod = p; }
+  }
+  return (bestPeriod === -1 || bestCorr < 0.005) ? 0 : sampleRate / bestPeriod;
+}
+
+function melFilterbank(freqData, sampleRate, numFilters) {
+  const nyquist    = sampleRate / 2;
+  const freqPerBin = nyquist / freqData.length;
+  const melMin     = hzToMel(80);
+  const melMax     = hzToMel(Math.min(nyquist, 8000));
+  const melPts     = Array.from({ length: numFilters + 2 }, (_, i) =>
+    melMin + (melMax - melMin) * i / (numFilters + 1));
+  const binPts = melPts.map(m =>
+    Math.min(Math.round(melToHz(m) / freqPerBin), freqData.length - 1));
+
+  const result = [];
+  for (let m = 1; m <= numFilters; m++) {
+    let energy = 0;
+    for (let k = binPts[m - 1]; k <= binPts[m + 1]; k++) {
+      const power = Math.pow(10, freqData[k] / 10);
+      let w = 0;
+      if (k <= binPts[m] && binPts[m] > binPts[m - 1])
+        w = (k - binPts[m - 1]) / (binPts[m] - binPts[m - 1]);
+      else if (k > binPts[m] && binPts[m + 1] > binPts[m])
+        w = (binPts[m + 1] - k) / (binPts[m + 1] - binPts[m]);
+      energy += power * w;
+    }
+    result.push(Math.log(Math.max(energy, 1e-10)));
+  }
+  return result;
+}
+
+function averageFeatures(list) {
+  const n      = list.length;
+  const avgRms = list.reduce((s, f) => s + f.rms, 0) / n;
+  const avgZcr = list.reduce((s, f) => s + f.zcr, 0) / n;
+  const pitches = list.map(f => f.pitch).filter(p => p > 0);
+  const avgPitch = pitches.length
+    ? pitches.reduce((s, v) => s + v, 0) / pitches.length : 0;
+  const pitchVar = pitches.length > 1
+    ? pitches.reduce((s, v) => s + (v - avgPitch) ** 2, 0) / pitches.length : 0;
+  const mfccLen  = list[0].mfcc.length;
+  const avgMfcc  = Array(mfccLen).fill(0);
+  for (const f of list) for (let i = 0; i < mfccLen; i++) avgMfcc[i] += f.mfcc[i] / n;
+  const profile = { pitch: avgPitch, pitchVar, rms: avgRms, zcr: avgZcr, mfcc: avgMfcc };
+  profile.vector = buildFeatureVector(profile);
+  return profile;
+}
+
+function buildFeatureVector(f) {
+  return [
+    (f.pitch    || 0) / 400,
+    (f.pitchVar || 0) / 10000,
+    (f.rms      || 0) * 10,
+    (f.zcr      || 0) * 10,
+    ...(f.mfcc  || []).map(v => v / 15),
+  ];
+}
+
+function cosineSimilarity(a, b) {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) { dot += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i]; }
+  const denom = Math.sqrt(na) * Math.sqrt(nb);
+  return denom < 1e-10 ? 0 : dot / denom;
+}
+
+// ---- Real-time Speaker Identification ----
+async function startSpeakerIdentification() {
+  if (!voiceProfile) return;
+  try {
+    speakerStream   = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    speakerAudioCtx = new AudioContext();
+    const source    = speakerAudioCtx.createMediaStreamSource(speakerStream);
+    speakerAnalyser = speakerAudioCtx.createAnalyser();
+    speakerAnalyser.fftSize = 2048;
+    source.connect(speakerAnalyser);
+    speakerInterval = setInterval(identifySpeaker, 500);
+  } catch(e) { console.warn('Speaker ID: mic error', e); }
+}
+
+function stopSpeakerIdentification() {
+  clearInterval(speakerInterval); speakerInterval = null;
+  if (speakerStream)   { speakerStream.getTracks().forEach(t => t.stop()); speakerStream = null; }
+  if (speakerAudioCtx) { speakerAudioCtx.close(); speakerAudioCtx = null; speakerAnalyser = null; }
+  clearTimeout(manualOverrideTimer); manualOverride = null;
+  setSpeakerDisplay(null, null);
+}
+
+function identifySpeaker() {
+  if (!speakerAnalyser || !voiceProfile || manualOverride) return;
+  const f = extractAudioFeatures(speakerAnalyser, speakerAudioCtx.sampleRate);
+  if (f.rms < 0.008) { setSpeakerDisplay(null, null); return; } // silence
+  const vec = buildFeatureVector({ pitch: f.pitch, pitchVar: 0, rms: f.rms, zcr: f.zcr, mfcc: f.mfcc });
+  const sim = cosineSimilarity(vec, voiceProfile.vector);
+  setSpeakerDisplay(sim >= SPEAKER_THRESHOLD ? 'self' : 'interviewer', sim);
+}
+
+function setSpeakerDisplay(who, sim) {
+  const indicator = document.getElementById('speaker-indicator');
+  const dot       = document.getElementById('speaker-dot');
+  const nameEl    = document.getElementById('speaker-name');
+  const confEl    = document.getElementById('speaker-conf');
+  const toggleBtn = document.getElementById('btn-speaker-toggle');
+  if (!who) {
+    indicator.classList.add('hidden');
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    return;
+  }
+  indicator.classList.remove('hidden');
+  indicator.dataset.speaker = who;
+  if (toggleBtn) toggleBtn.style.display = 'inline-flex';
+  dot.className   = 'speaker-dot ' + who;
+  nameEl.textContent = who === 'self' ? '🟢 あなた' : '🔴 面接官';
+  confEl.textContent = sim !== null ? `${(sim * 100).toFixed(0)}%` : '手動';
+}
+
+function manualSpeakerToggle() {
+  const indicator = document.getElementById('speaker-indicator');
+  const current   = indicator.dataset.speaker || 'interviewer';
+  const next      = current === 'self' ? 'interviewer' : 'self';
+  manualOverride  = next;
+  setSpeakerDisplay(next, null);
+  clearTimeout(manualOverrideTimer);
+  manualOverrideTimer = setTimeout(() => { manualOverride = null; }, 8000);
+  toast('話者を手動で切り替えました（8秒後に自動判定に戻ります）');
 }
 
 // ============================================================
