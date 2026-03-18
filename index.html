@@ -1122,7 +1122,8 @@ function setMode(m) {
 function saveApiKey() {
   apiKey = document.getElementById('api-key').value.trim();
   sessionStorage.setItem('interview_api_key', apiKey);
-  toast('APIキーを保存しました');
+  const preview = apiKey ? apiKey.slice(0, 4) + '...' : '(空)';
+  toast(`APIキーを保存しました [${preview}]`);
 }
 
 function saveProfile() {
@@ -1282,6 +1283,8 @@ async function sendToAI(text) {
   }
 
   setMicStatus('processing');
+  const keyPreview = apiKey ? apiKey.slice(0, 4) + '...' : '(空)';
+  toast(`API送信中 [key: ${keyPreview}]`);
 
   // Add loading item to history
   const loadingId = 'loading-' + Date.now();
@@ -1300,6 +1303,8 @@ async function sendToAI(text) {
 
   const callApi = () => fetch(url, {
     method: 'POST',
+    mode: 'cors',
+    credentials: 'omit',
     headers: {
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
